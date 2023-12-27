@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 import uuid
 import hashlib
+from tqdm import tqdm
 
 def import_history(tsv_file, sqlite_file):
     # Read the .tsv file into a pandas DataFrame
@@ -13,7 +14,7 @@ def import_history(tsv_file, sqlite_file):
     c = conn.cursor()
 
     # Iterate over the rows of the DataFrame
-    for index, row in df.iterrows():
+    for index, row in tqdm(df.iterrows(), total=df.shape[0]):
         url = row['url']
         title = str(row['title']).replace("'", "''")  # Escape single quotes
         rev_host = url.split('//')[-1].split('/')[0][::-1]

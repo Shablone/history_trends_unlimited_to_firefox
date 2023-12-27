@@ -5,15 +5,20 @@ import uuid
 import hashlib
 from tqdm import tqdm
 
+
 def import_history(tsv_file, sqlite_file):
     # Read the .tsv file into a pandas DataFrame
-    df = pd.read_csv(tsv_file, sep='\t', header=None, names=['url', 'timestamp', 'unknown_number', 'title'])
+    df = pd.read_csv(tsv_file, sep='\t', header=None, names=['url', 'timestamp', 'single_number', 'title'])
 
     # Connect to the SQLite database
     conn = sqlite3.connect(sqlite_file)
     c = conn.cursor()
 
-    # Iterate over the rows of the DataFrame
+    # Get existing URLs and their ids
+    c.execute("SELECT id, url FROM moz_places")
+    existing_urls = {row[1]: row[0] for row in c.fetchall()}
+
+    # Iterate over the rows of the DataFrame    
     for index, row in tqdm(df.iterrows(), total=df.shape[0]):
         url = row['url']
         title = str(row['title']).replace("'", "''")  # Escape single quotes
@@ -23,11 +28,7 @@ def import_history(tsv_file, sqlite_file):
         #timestamp = int(float(row['timestamp'][1:]) * 1e6)  # Remove the 'U' prefix, convert to float, then to int, and multiply by 1e6
         timestamp = int(float(row['timestamp'][1:])) * 1e3 #same without milleseconds
 
-        # Check if the URL already exists in the moz_places table
-        c.execute("SELECT id FROM moz_places WHERE url = ?", (url,))
-        result = c.fetchone()
-
-        if result is None:
+        if url not in existing_urls:
             # URL does not exist in the table, so insert it
             c.execute("""
                 INSERT INTO moz_places (url, title, rev_host, last_visit_date, guid, url_hash) 
@@ -37,9 +38,12 @@ def import_history(tsv_file, sqlite_file):
             # Get the id of the inserted row
             c.execute("SELECT last_insert_rowid()")
             place_id = c.fetchone()[0]
+
+            # Add the new URL to the set of existing URLs
+            existing_urls[url] = place_id
         else:
             # URL already exists in the table, so get its id
-            place_id = result[0]
+            place_id = existing_urls[url]
 
         # Insert into moz_historyvisits
         c.execute("""

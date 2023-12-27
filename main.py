@@ -22,15 +22,23 @@ def import_history(tsv_file, sqlite_file):
         #timestamp = int(float(row['timestamp'][1:]) * 1e6)  # Remove the 'U' prefix, convert to float, then to int, and multiply by 1e6
         timestamp = int(float(row['timestamp'][1:])) * 1e3 #same without milleseconds
 
-        # Insert into moz_places
-        c.execute("""
-            INSERT INTO moz_places (url, title, rev_host, last_visit_date, guid, url_hash) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (url, title, rev_host, timestamp, guid, url_hash))
+        # Check if the URL already exists in the moz_places table
+        c.execute("SELECT id FROM moz_places WHERE url = ?", (url,))
+        result = c.fetchone()
 
-        # Get the id of the inserted row
-        c.execute("SELECT last_insert_rowid()")
-        place_id = c.fetchone()[0]
+        if result is None:
+            # URL does not exist in the table, so insert it
+            c.execute("""
+                INSERT INTO moz_places (url, title, rev_host, last_visit_date, guid, url_hash) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (url, title, rev_host, timestamp, guid, url_hash))
+
+            # Get the id of the inserted row
+            c.execute("SELECT last_insert_rowid()")
+            place_id = c.fetchone()[0]
+        else:
+            # URL already exists in the table, so get its id
+            place_id = result[0]
 
         # Insert into moz_historyvisits
         c.execute("""
@@ -42,7 +50,9 @@ def import_history(tsv_file, sqlite_file):
     conn.commit()
     conn.close()
 
+
 tsv_file = r"C:\Users\user\Downloads\htu_backup_202....tsv"
 sqlite_file = r"C:\Users\user\AppData\Roaming\Mozilla\Firefox\Profiles\profileblub\places.sqlite"
+
 import_history(tsv_file, sqlite_file)
 # %%

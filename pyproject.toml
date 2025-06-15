@@ -1,19 +1,7 @@
 [project]
-name = ""
-version = ""
-description = ""
-authors = [
-    {name = "Elias",email = "1elias.bauer@gmail.com"},
-]
-dependencies = [
-    "pandas>=2.1.4",
-    "tqdm>=4.66.1",
-]
-requires-python = ">=3.10"
+name = "history-trends-unlimited-into-firefox"
+version = "1.0.0"
+description = "convert browser history from history trends unlimited into firefox"
 readme = "README.md"
-license = {text = "MIT"}
-
-[tool.pdm.dev-dependencies]
-dev = [
-    "ipykernel>=6.28.0",
-]
+requires-python = ">=3.10"
+dependencies = ["pandas>=2.1.4", "tqdm>=4.66.1"]
